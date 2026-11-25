@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZEX–LEX Account</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a working ledger between two companies, calm and exact.
+   IDEA: a bank statement / ledger card: one balance line that answers "who owes whom".
+   PICTURE: the balance band itself: big net figure with the three totals beside it, then the ledger.
+   COLOUR and TYPE: ice ground, ink, one hot pink accent for money owed; teal for portal. Space Grotesk + Inter.
+   LAYOUT: balance band full width, action bar, tabs, ledger tables; forms in a sheet dialog. */
+:root{color-scheme:light dark;--bg:light-dark(#dff1f7,#06222e);--card:light-dark(#ffffff,#0c3141);--ink:light-dark(#06222e,#e6f4f8);--mut:light-dark(#4b6772,#93b3bf);--line:light-dark(#c4dde6,#1d4a5c);--pink:#ff2e7e;--teal:light-dark(#0f7c8c,#4fd0df);--inv:light-dark(#06222e,#e6f4f8);--soft:light-dark(#eef8fb,#0a2a38);--warn:light-dark(#fff1c9,#3b3313);--bad:light-dark(#ffe1ec,#46172a)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+h1,h2,.num-big,.fig-n{font-family:"Space Grotesk",Inter,sans-serif}
+.band{padding:clamp(22px,3.5vw,48px) max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+.top{display:grid;grid-template-columns:1.15fr 1fr;gap:clamp(18px,3vw,40px);align-items:end}
+h1{font-size:clamp(30px,4vw,46px);line-height:1.05;margin:0 0 8px;font-weight:700;text-wrap:balance}
+.lede{color:var(--mut);margin:0;max-width:60ch}
+.netcard{background:var(--ink);color:var(--bg);border-radius:18px;padding:22px 24px}
+.netcard .lbl{font-size:13px;opacity:.75}
+.num-big{font-size:clamp(34px,5vw,56px);line-height:1;margin:6px 0 4px;font-weight:700;white-space:nowrap}
+.netcard.owe .num-big{color:var(--pink)}
+.netcard .sub{font-size:13px;opacity:.8}
+.figs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:22px}
+.fig{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.fig .l{font-size:13px;color:var(--mut);font-weight:600}
+.fig-n{font-size:clamp(22px,2.6vw,30px);font-weight:700;white-space:nowrap}
+.fig .s{font-size:13px;color:var(--mut)}
+.fig .s b{color:var(--ink);font-weight:600;white-space:nowrap}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:22px 0 8px}
+button,.btn{font:600 15px/1 Inter,sans-serif;min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
+button.pri{background:var(--pink);border-color:var(--pink);color:#fff}
+button.ghost{background:transparent}
+button.sm{min-height:34px;padding:0 10px;font-size:13px}
+button:disabled{opacity:.5;cursor:default}
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);overflow-x:auto}
+.tabs button{border:0;border-bottom:3px solid transparent;border-radius:0;background:none;color:var(--mut);margin-bottom:-2px;flex:none}
+.tabs button.on{color:var(--ink);border-color:var(--pink)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.tools input{flex:1;min-width:200px}
+input,select,textarea{font:16px Inter,sans-serif;min-height:44px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);width:100%}
+textarea{min-height:70px}
+.scroll{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:14px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:12.5px;color:var(--mut);font-weight:600;padding:10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.r,th.r{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+tr.void td{opacity:.45;text-decoration:line-through}
+tr.tot td{font-weight:700;background:var(--soft)}
+.thumb{width:54px;height:54px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:zoom-in;display:block}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap;margin:1px 2px 1px 0}
+.p-portal{background:color-mix(in srgb,var(--teal) 18%,transparent);color:var(--teal)}
+.p-inv{background:var(--soft);color:var(--ink);border:1px solid var(--line)}
+.p-pend{background:var(--bad);color:var(--pink)}
+.p-warn{background:var(--warn)}
+.p-lex{background:var(--pink);color:#fff}
+.small{font-size:13px;color:var(--mut)}
+.acts{display:flex;gap:4px;flex-wrap:wrap}
+.empty{padding:28px;text-align:center;color:var(--mut)}
+.note{font-size:13px;color:var(--mut);margin:10px 2px}
+.status{font-size:13px;color:var(--mut);margin-top:6px;min-height:18px}
+/* dialog */
+.sheet{position:fixed;inset:0;background:rgba(3,20,28,.55);display:none;align-items:flex-start;justify-content:center;padding:4vh 12px;overflow-y:auto;z-index:50}
+.sheet.open{display:flex}
+.panel{background:var(--card);color:var(--ink);border-radius:18px;width:min(680px,100%);padding:22px}
+.panel h2{margin:0 0 14px;font-size:24px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{display:block;font-size:13px;font-weight:600;color:var(--mut)}
+label>input,label>select,label>textarea{margin-top:4px}
+.drop{border:2px dashed var(--line);border-radius:14px;padding:16px;text-align:center;cursor:pointer;display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap}
+.drop.over{border-color:var(--pink)}
+.drop img{max-height:120px;border-radius:8px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg label{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:10px;padding:0 12px;min-height:44px;cursor:pointer;color:var(--ink);font-size:15px}
+.seg input{width:auto;min-height:0}
+.dup{background:var(--warn);border-radius:10px;padding:10px 12px;font-size:14px;margin-top:10px;display:none}
+.foot{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.lb{position:fixed;inset:0;background:rgba(3,12,18,.9);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:60;padding:16px}
+.lb.open{display:flex}
+.lb img{max-width:min(94vw,900px);max-height:82vh;border-radius:8px;background:#fff}
+.lb .cap{color:#e6f4f8;margin-top:10px;font-size:14px;text-align:center}
+.lb a{color:#fff}
+.gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:80;padding:20px}
+.gate .panel{max-width:420px}
+.gate[hidden]{display:none}
+@media(max-width:820px){.top{grid-template-columns:1fr}.figs{grid-template-columns:1fr}}
+@media(max-width:600px){.grid2{grid-template-columns:1fr}table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 10px;padding-inline-start:8.5em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--mut)}.stack td:empty{display:none}.stack td.r{text-align:start}}
+@media(prefers-reduced-motion:no-preference){.netcard{transition:background .3s}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+<section class="band">
+ <div class="wrap">
+  <div class="top">
+   <div>
+    <h1>ZEX ↔ Logistiks account</h1>
+    <p class="lede">Every payment, every LEX invoice and every portal deposit in one ledger. Upload a proof, say what it pays for, and the balance updates for everyone who opens this page.</p>
+   </div>
+   <div class="netcard" id="netcard">
+    <div class="lbl" id="netLbl">Balance</div>
+    <div class="num-big" id="netNum">—</div>
+    <div class="sub" id="netSub">Loading the ledger…</div>
+   </div>
+  </div>
+  <div class="figs">
+   <div class="fig"><div class="l">Total paid to LEX</div><div class="fig-n" id="fPaid">—</div><div class="s" id="fPaidS"></div></div>
+   <div class="fig"><div class="l">Invoices charged by LEX</div><div class="fig-n" id="fInv">—</div><div class="s" id="fInvS"></div></div>
+   <div class="fig"><div class="l">Put in portal</div><div class="fig-n" id="fDep">—</div><div class="s" id="fDepS"></div></div>
+  </div>
+  <div class="bar" id="actions">
+   <button class="pri" id="bPay">+ Payment proof</button>
+   <button id="bInv">+ LEX invoice</button>
+   <button id="bDep">+ Portal deposit</button>
+   <button id="bCsv">Import portal CSV</button>
+   <button id="bProofs" hidden>Attach starting proofs</button>
+   <input type="file" id="proofFiles" accept="image/*,application/pdf" multiple hidden>
+   <input type="file" id="csvFile" accept=".csv,text/csv" hidden>
+  </div>
+  <div class="status" id="status"></div>
+
+  <div class="tabs" role="tablist">
+   <button class="on" data-t="payment">Payments</button>
+   <button data-t="invoice">Invoices</button>
+   <button data-t="deposit">Portal deposits</button>
+   <button data-t="statement">Statement</button>
+  </div>
+  <div class="tools"><input id="q" placeholder="Search amount, reference, run, MAWB, payer…" aria-label="Search"></div>
+  <div class="scroll" id="list"><div class="empty">Loading…</div></div>
+  <p class="note">Balance = invoices charged + amount put in portal − payments (voided payments excluded). Portal deposits funded by LEX (e.g. a courtesy credit) count as money you owe.</p>
+ </div>
+</section>
+
+<div class="sheet" id="sheet" role="dialog" aria-modal="true"><div class="panel" id="panel"></div></div>
+<div class="gate" id="gate"><form class="panel" id="gateF"><h2>ZEX ↔ Logistiks account</h2><p class="small">Enter the team passcode to open the ledger.</p><label>Passcode<input id="gateP" type="password" autocomplete="current-password" required></label><div class="status" id="gateMsg"></div><div class="foot"><button class="pri" type="submit">Open</button></div></form></div>
+<div class="lb" id="lb"><img id="lbImg" alt=""><div class="cap" id="lbCap"></div><button class="ghost" id="lbX" style="color:#fff;margin-top:10px">Close</button></div>
+
+<script>
+{
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money=v=>(v<0?"−":"")+"$"+Math.abs(+v||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const dfmt=d=>d?new Date(d+"T00:00:00").toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}):"";
+const num=v=>{const n=parseFloat(String(v??"").replace(/[^0-9.\-]/g,""));return isFinite(n)?n:0};
+const safeUrl=u=>/^(https:\/\/|\/proofs\/|data:(image\/|application\/pdf))/.test(String(u||""))?String(u):"";
+let PASS="";try{PASS=localStorage.getItem("zexlex-pass")||""}catch{}
+let rows=[],tab="payment",col=true,aiOn=false;
+async function api(path,opt={}){const r=await fetch(path,{...opt,headers:{...(opt.headers||{}),"x-passcode":PASS}});let j={};try{j=await r.json()}catch{}
+ if(r.status===401){showGate("Wrong passcode.");throw{message:"Wrong passcode"}}if(!r.ok)throw{message:j.error||("Error "+r.status)};return j}
+async function load(){const j=await api("/api/entries");rows=j.entries||[];rows.forEach(r=>r._id=r.id);render();
+ $("#bProofs").hidden=!rows.some(r=>/^(pay|inv)-\d+$/.test(r.id)&&!r.proofUrl);
+ if(!rows.length)$("#list").innerHTML=`<div class="empty">The ledger is empty.<br><br><button class="pri" id="seedB">Load starting data (reconciled to 25 Nov 2026)</button></div>`;
+ if(j.persistent===false)status("Storage is not connected (Vercel Blob) — data will not be kept. See README.");}
+const status=t=>{$("#status").textContent=t||""};
+
+/* ---------- totals ---------- */
+function totals(){
+ const pay=rows.filter(r=>r.kind==="payment"&&r.status!=="voided"),inv=rows.filter(r=>r.kind==="invoice"),dep=rows.filter(r=>r.kind==="deposit");
+ const s=(a,k)=>a.reduce((t,r)=>t+num(r[k]),0);
+ const T={paid:s(pay,"usd"),toInv:s(pay,"toInvoice"),toPortal:s(pay,"toPortal"),inv:s(inv,"usd"),dep:s(dep,"usd"),
+  depZ:s(dep.filter(d=>d.fundedBy==="ZEX"),"usd"),depL:s(dep.filter(d=>d.fundedBy!=="ZEX"),"usd"),
+  pend:pay.filter(p=>!p.proofUrl).length,nPay:pay.length};
+ T.net=T.inv+T.dep-T.paid;T.invBal=T.inv-T.toInv;T.portBal=T.dep-T.toPortal;return T;
+}
+function renderTop(){
+ const T=totals(),owe=T.net>0.005;
+ $("#netcard").classList.toggle("owe",owe);
+ $("#netLbl").textContent=owe?"ZEX owes LEX":(T.net<-0.005?"LEX owes ZEX":"All settled");
+ $("#netNum").textContent=money(Math.abs(T.net));
+ $("#netSub").textContent=`Invoices ${T.invBal>=0?"due "+money(T.invBal):"overpaid "+money(-T.invBal)} · Portal ${T.portBal>=0?"owed "+money(T.portBal):"credit "+money(-T.portBal)}`;
+ $("#fPaid").textContent=money(T.paid);
+ $("#fPaidS").innerHTML=`invoices <b>${esc(money(T.toInv))}</b> · portal <b>${esc(money(T.toPortal))}</b>${T.pend?` · <b style="color:var(--pink)">${T.pend} proof pending</b>`:""}`;
+ $("#fInv").textContent=money(T.inv);
+ $("#fInvS").innerHTML=`${rows.filter(r=>r.kind==="invoice").length} invoices`;
+ $("#fDep").textContent=money(T.dep);
+ $("#fDepS").innerHTML=`from ZEX <b>${esc(money(T.depZ))}</b> · by LEX <b>${esc(money(T.depL))}</b>`;
+}
+
+/* ---------- lists ---------- */
+const sortD=a=>a.slice().sort((x,y)=>(x.date||"").localeCompare(y.date||"")||(x.no||0)-(y.no||0));
+function matchQ(r,q){if(!q)return true;return Object.values(r).join(" ").toLowerCase().includes(q)}
+function thumb(r){const u=safeUrl(r.proofUrl);if(!u)return r.kind==="payment"?`<span class="pill p-pend">Proof pending</span>`:"";
+ return /pdf/.test(r.proofType||"")?`<a href="${esc(u)}" target="_blank" rel="noopener">PDF</a>`:`<img class="thumb" src="${esc(u)}" alt="proof" data-id="${esc(r._id)}">`}
+function acts(r){if(!col)return"";const v=r.kind==="payment"?`<button class="sm ghost" data-a="void" data-id="${esc(r._id)}">${r.status==="voided"?"Restore":"Void"}</button>`:"";
+ return `<div class="acts"><button class="sm" data-a="edit" data-id="${esc(r._id)}">Edit</button>${v}<button class="sm ghost" data-a="del" data-id="${esc(r._id)}">Delete</button></div>`}
+function renderList(){
+ const q=$("#q").value.trim().toLowerCase();let h="";
+ if(tab==="payment"){const a=sortD(rows.filter(r=>r.kind==="payment"&&matchQ(r,q)));
+  h=`<table class="stack"><tr><th>#</th><th>Date</th><th>Paid by / method</th><th>Reference</th><th class="r">Amount</th><th>Purpose</th><th class="r">Invoices</th><th class="r">Portal</th><th>Proof</th><th>Status / notes</th><th></th></tr>`+
+  a.map(r=>`<tr class="${r.status==="voided"?"void":""}"><td>${esc(r.no??"")}</td><td style="white-space:nowrap">${esc(dfmt(r.date))}</td><td>${esc(r.payer)}<div class="small">${esc(r.method)}</div></td><td class="small">${esc(r.ref)}</td>
+  <td class="r">${esc(money(r.usd))}${r.currency==="PKR"?`<div class="small">PKR ${esc(num(r.amount).toLocaleString())} @ ${esc(r.fx)}</div>`:""}</td>
+  <td>${num(r.toPortal)?`<span class="pill p-portal">Portal</span>`:""}${num(r.toInvoice)?`<span class="pill p-inv">Invoices</span>`:""}<div class="small">${esc(r.run)}</div></td>
+  <td class="r">${num(r.toInvoice)?esc(money(r.toInvoice)):""}</td><td class="r">${num(r.toPortal)?esc(money(r.toPortal)):""}</td><td>${thumb(r)}</td>
+  <td>${r.status==="voided"?`<span class="pill p-warn">Voided</span>`:r.status==="unconfirmed"?`<span class="pill p-warn">Not confirmed by LEX</span>`:`<span class="pill p-portal">OK</span>`}<div class="small">${esc(r.notes)}</div></td><td>${acts(r)}</td></tr>`).join("");
+  const T=totals();h+=`<tr class="tot"><td colspan="4">Total (excl. voided)</td><td class="r">${esc(money(T.paid))}</td><td></td><td class="r">${esc(money(T.toInv))}</td><td class="r">${esc(money(T.toPortal))}</td><td colspan="3"></td></tr></table>`;
+  if(!a.length)h=`<div class="empty">No payments yet. Add your first proof with “+ Payment proof”.</div>`}
+ if(tab==="invoice"){const a=sortD(rows.filter(r=>r.kind==="invoice"&&matchQ(r,q)));
+  h=`<table class="stack"><tr><th>Run</th><th>MAWB</th><th>Invoice #</th><th>Date</th><th>Weight / pcs</th><th class="r">Amount</th><th>File</th><th>Notes</th><th></th></tr>`+
+  a.map(r=>`<tr><td><b>${esc(r.run)}</b></td><td style="white-space:nowrap">${esc(r.mawb)}</td><td>${esc(r.invoiceNo)}</td><td style="white-space:nowrap">${esc(dfmt(r.date))}</td><td>${esc(r.weight)}</td><td class="r">${esc(money(r.usd))}</td><td>${thumb(r)}</td><td class="small">${esc(r.notes)}</td><td>${acts(r)}</td></tr>`).join("")+
+  `<tr class="tot"><td colspan="5">Total invoiced</td><td class="r">${esc(money(totals().inv))}</td><td colspan="3"></td></tr></table>`;
+  if(!a.length)h=`<div class="empty">No invoices yet.</div>`}
+ if(tab==="deposit"){const a=sortD(rows.filter(r=>r.kind==="deposit"&&matchQ(r,q)));
+  h=`<table class="stack"><tr><th>Date</th><th>Portal txn #</th><th>Type</th><th class="r">Amount</th><th>Funded by</th><th>Matched payment</th><th>Notes</th><th></th></tr>`+
+  a.map(r=>`<tr><td style="white-space:nowrap">${esc(dfmt(r.date))}</td><td>${esc(r.ref)}</td><td>${esc(r.depType)}</td><td class="r">${esc(money(r.usd))}</td><td>${r.fundedBy==="ZEX"?`<span class="pill p-portal">ZEX</span>`:`<span class="pill p-lex">${esc(r.fundedBy||"LEX")}</span>`}</td><td>${r.matchNo?"#"+esc(r.matchNo):""}</td><td class="small">${esc(r.notes)}</td><td>${acts(r)}</td></tr>`).join("")+
+  `<tr class="tot"><td colspan="3">Total put in portal</td><td class="r">${esc(money(totals().dep))}</td><td colspan="4"></td></tr></table>`;
+  if(!a.length)h=`<div class="empty">No portal deposits yet. Use “Import portal CSV” with the Expership export.</div>`}
+ if(tab==="statement"){const ord={invoice:0,deposit:1,payment:2};
+  const a=rows.filter(r=>r.status!=="voided"&&matchQ(r,q)).sort((x,y)=>(x.date||"").localeCompare(y.date||"")||ord[x.kind]-ord[y.kind]);
+  let ib=0,pb=0;
+  h=`<table class="stack"><tr><th>Date</th><th>Entry</th><th class="r">Charged</th><th class="r">Into portal</th><th class="r">Paid</th><th class="r">Invoice bal.</th><th class="r">Portal bal.</th><th class="r">Net owed</th></tr>`+
+  a.map(r=>{const ch=r.kind==="invoice"?num(r.usd):0,dp=r.kind==="deposit"?num(r.usd):0,pd=r.kind==="payment"?num(r.usd):0;
+   ib+=ch-(r.kind==="payment"?num(r.toInvoice):0);pb+=dp-(r.kind==="payment"?num(r.toPortal):0);
+   const lab=r.kind==="invoice"?`Invoice ${r.invoiceNo} · ${r.run}`:r.kind==="deposit"?`${r.depType} (${r.fundedBy})`:`Payment #${r.no??""} · ${r.method}`;
+   return `<tr><td style="white-space:nowrap">${esc(dfmt(r.date))}</td><td>${esc(lab)}</td><td class="r">${ch?esc(money(ch)):""}</td><td class="r">${dp?esc(money(dp)):""}</td><td class="r">${pd?esc(money(pd)):""}</td><td class="r">${esc(money(ib))}</td><td class="r">${esc(money(pb))}</td><td class="r"><b>${esc(money(ib+pb))}</b></td></tr>`}).join("")+`</table>`;
+  if(!a.length)h=`<div class="empty">Nothing to show yet.</div>`}
+ $("#list").innerHTML=h;
+}
+function render(){renderTop();renderList()}
+
+/* ---------- forms ---------- */
+const sheet=$("#sheet"),panel=$("#panel");
+let pendingFile=null,editId=null;
+function close(){sheet.classList.remove("open");pendingFile=null;editId=null}
+sheet.addEventListener("click",e=>{if(e.target===sheet)close()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){close();$("#lb").classList.remove("open")}});
+const runOpts=()=>{const runs=[...new Set(rows.filter(r=>r.kind==="invoice").map(r=>r.run))].sort();return runs.map(r=>`<option>${esc(r)}</option>`).join("")};
+function field(id,label,val,type="text",extra=""){return `<label>${label}<input id="${id}" type="${type}" value="${esc(val??"")}" ${extra}></label>`}
+
+function payForm(r={}){
+ editId=r._id||null;const purpose=num(r.toPortal)&&num(r.toInvoice)?"split":num(r.toPortal)?"portal":"invoice";
+ const nextNo=Math.max(0,...rows.filter(x=>x.kind==="payment").map(x=>num(x.no)))+1;
+ panel.innerHTML=`<h2>${editId?"Edit payment":"Add payment proof"}</h2>
+ <div class="drop" id="drop" tabindex="0"><span id="dropTxt">${r.proofUrl?"Proof attached — drop a new file to replace":"Drop a screenshot or PDF here, or click to choose"}</span>${safeUrl(r.proofUrl)&&!/pdf/.test(r.proofType||"")?`<img src="${esc(safeUrl(r.proofUrl))}" alt="">`:""}</div>
+ <input type="file" id="pf" accept="image/*,application/pdf" hidden>
+ <div style="margin:10px 0"><button class="sm" id="readAi" ${aiOn?"":"hidden"} disabled>Read amount &amp; details automatically</button> <span class="small" id="aiMsg"></span></div>
+ <div class="grid2">${field("fNo","Payment #",r.no??nextNo,"number")}${field("fDate","Payment date",r.date,"date")}
+ <label>Currency<select id="fCur"><option ${r.currency!=="PKR"?"selected":""}>USD</option><option ${r.currency==="PKR"?"selected":""}>PKR</option></select></label>
+ ${field("fAmt","Amount (as on proof)",r.amount,"number",'step="0.01" inputmode="decimal"')}
+ ${field("fFx","FX rate (PKR per USD)",r.fx,"number",'step="0.01"')}${field("fUsd","Amount in USD",r.usd,"number",'step="0.01"')}
+ ${field("fPayer","Paid by (account / person)",r.payer)}${field("fMethod","Method (Zelle, wire, Raast…)",r.method)}
+ ${field("fRef","Reference / confirmation #",r.ref)}${field("fFee","Bank fee (USD, optional)",r.fee,"number",'step="0.01"')}</div>
+ <div style="margin-top:14px"><label>What does it pay for?</label><div class="seg" style="margin-top:6px">
+  <label><input type="radio" name="pp" value="portal" ${purpose==="portal"?"checked":""}> Portal top-up</label>
+  <label><input type="radio" name="pp" value="invoice" ${purpose==="invoice"?"checked":""}> Invoices</label>
+  <label><input type="radio" name="pp" value="split" ${purpose==="split"?"checked":""}> Split</label></div></div>
+ <div class="grid2" style="margin-top:10px">${field("fToI","→ to invoices (USD)",r.toInvoice,"number",'step="0.01"')}${field("fToP","→ to portal (USD)",r.toPortal,"number",'step="0.01"')}
+ <label>Run / invoice it pays<input id="fRun" list="runs" value="${esc(r.run??"")}"><datalist id="runs">${runOpts()}</datalist></label>
+ <label>Status<select id="fSt"><option value="ok" ${r.status==="ok"||!r.status?"selected":""}>OK</option><option value="unconfirmed" ${r.status==="unconfirmed"?"selected":""}>Not confirmed by LEX</option><option value="voided" ${r.status==="voided"?"selected":""}>Voided (excluded)</option></select></label></div>
+ <label style="margin-top:10px">Notes<textarea id="fNotes">${esc(r.notes??"")}</textarea></label>
+ <div class="dup" id="dup"></div>
+ <div class="foot"><button class="ghost" id="cx">Cancel</button><button class="pri" id="sv">Save payment</button></div>`;
+ sheet.classList.add("open");
+ const sync=()=>{const cur=$("#fCur").value,amt=num($("#fAmt").value),fx=num($("#fFx").value);
+  if(cur==="PKR"&&fx)$("#fUsd").value=(amt/fx).toFixed(2);else if(cur==="USD")$("#fUsd").value=amt?amt.toFixed(2):"";splitSync();dupCheck()};
+ const splitSync=()=>{const p=document.querySelector('input[name=pp]:checked').value,u=num($("#fUsd").value);
+  if(p==="portal"){$("#fToP").value=u.toFixed(2);$("#fToI").value="0"}else if(p==="invoice"){$("#fToI").value=u.toFixed(2);$("#fToP").value="0"}
+  $("#fToI").disabled=$("#fToP").disabled=p!=="split"};
+ const dupCheck=()=>{const u=num($("#fUsd").value),d=$("#fDate").value,ref=$("#fRef").value.trim().toLowerCase();
+  const hit=rows.filter(x=>x.kind==="payment"&&x._id!==editId&&((ref.length>4&&String(x.ref||"").toLowerCase()===ref)||(u&&Math.abs(num(x.usd)-u)<0.01&&x.date===d)));
+  $("#dup").style.display=hit.length?"block":"none";$("#dup").textContent=hit.length?`Possible duplicate of payment #${hit.map(h=>h.no).join(", #")} (same ${ref&&hit.some(h=>String(h.ref||"").toLowerCase()===ref)?"reference":"amount and date"}). Check before saving.`:""};
+ ["fCur","fAmt","fFx"].forEach(i=>$("#"+i).addEventListener("input",sync));
+ ["fUsd"].forEach(i=>$("#"+i).addEventListener("input",()=>{splitSync();dupCheck()}));
+ ["fDate","fRef"].forEach(i=>$("#"+i).addEventListener("input",dupCheck));
+ document.querySelectorAll('input[name=pp]').forEach(x=>x.addEventListener("change",splitSync));
+ splitSync();
+ wireDrop(()=>{$("#readAi").disabled=!(pendingFile&&/^image\//.test(pendingFile.type))});
+ $("#readAi").onclick=readProof;$("#cx").onclick=close;
+ $("#sv").onclick=async()=>{
+  const usd=num($("#fUsd").value),ti=num($("#fToI").value),tp=num($("#fToP").value);
+  if(!usd){$("#aiMsg").textContent="Enter the amount first.";return}
+  if(Math.abs(ti+tp-usd)>0.01){$("#dup").style.display="block";$("#dup").textContent=`Invoices + portal (${money(ti+tp)}) must equal the USD amount (${money(usd)}).`;return}
+  const d={kind:"payment",no:num($("#fNo").value),date:$("#fDate").value,currency:$("#fCur").value,amount:num($("#fAmt").value),fx:num($("#fFx").value)||null,usd,
+   payer:$("#fPayer").value.trim(),method:$("#fMethod").value.trim(),ref:$("#fRef").value.trim(),fee:num($("#fFee").value),toInvoice:ti,toPortal:tp,
+   run:$("#fRun").value.trim(),status:$("#fSt").value,notes:$("#fNotes").value.trim()};
+  await save(d,r);
+ };
+}
+function invForm(r={}){
+ editId=r._id||null;
+ panel.innerHTML=`<h2>${editId?"Edit invoice":"Add LEX invoice"}</h2>
+ <div class="drop" id="drop" tabindex="0"><span id="dropTxt">${r.proofUrl?"File attached — drop a new one to replace":"Drop the invoice PDF here (optional)"}</span></div><input type="file" id="pf" accept="application/pdf,image/*" hidden>
+ <div class="grid2" style="margin-top:12px">${field("iNo","Invoice #",r.invoiceNo)}${field("iDate","Invoice date",r.date,"date")}${field("iRun","Run",r.run,"text",'placeholder="Run 8"')}${field("iMawb","MAWB",r.mawb)}${field("iW","Weight / pcs",r.weight)}${field("iAmt","Amount (USD)",r.usd,"number",'step="0.01"')}</div>
+ <label style="margin-top:10px">Notes<textarea id="iNotes">${esc(r.notes??"")}</textarea></label>
+ <div class="foot"><button class="ghost" id="cx">Cancel</button><button class="pri" id="sv">Save invoice</button></div>`;
+ sheet.classList.add("open");wireDrop();$("#cx").onclick=close;
+ $("#sv").onclick=()=>save({kind:"invoice",invoiceNo:$("#iNo").value.trim(),date:$("#iDate").value,run:$("#iRun").value.trim(),mawb:$("#iMawb").value.trim(),weight:$("#iW").value.trim(),usd:num($("#iAmt").value),notes:$("#iNotes").value.trim()},r);
+}
+function depForm(r={}){
+ editId=r._id||null;const pays=sortD(rows.filter(x=>x.kind==="payment"&&num(x.toPortal)));
+ panel.innerHTML=`<h2>${editId?"Edit portal deposit":"Add portal deposit"}</h2>
+ <div class="grid2">${field("dDate","Date in portal",r.date,"date")}${field("dRef","Portal txn #",r.ref)}
+ <label>Type<select id="dType"><option ${r.depType!=="Courtesy Credit"?"selected":""}>Fund Transfer</option><option ${r.depType==="Courtesy Credit"?"selected":""}>Courtesy Credit</option></select></label>
+ ${field("dAmt","Amount (USD)",r.usd,"number",'step="0.01"')}
+ <label>Funded by<select id="dBy"><option value="ZEX" ${r.fundedBy==="ZEX"?"selected":""}>ZEX payment</option><option value="LEX" ${r.fundedBy!=="ZEX"?"selected":""}>LEX (owed by ZEX)</option></select></label>
+ <label>Matched payment<select id="dMatch"><option value="">—</option>${pays.map(p=>`<option value="${esc(p.no)}" ${String(r.matchNo)===String(p.no)?"selected":""}>#${esc(p.no)} · ${esc(dfmt(p.date))} · ${esc(money(p.toPortal))}</option>`).join("")}</select></label></div>
+ <label style="margin-top:10px">Notes<textarea id="dNotes">${esc(r.notes??"")}</textarea></label>
+ <div class="foot"><button class="ghost" id="cx">Cancel</button><button class="pri" id="sv">Save deposit</button></div>`;
+ sheet.classList.add("open");$("#cx").onclick=close;
+ $("#dMatch").onchange=()=>{if($("#dMatch").value)$("#dBy").value="ZEX"};
+ $("#sv").onclick=()=>save({kind:"deposit",date:$("#dDate").value,ref:$("#dRef").value.trim(),depType:$("#dType").value,usd:num($("#dAmt").value),fundedBy:$("#dBy").value,matchNo:num($("#dMatch").value)||null,notes:$("#dNotes").value.trim()},r);
+}
+function wireDrop(after){
+ const dz=$("#drop"),inp=$("#pf");if(!dz)return;
+ const take=f=>{if(!f)return;pendingFile=f;$("#dropTxt").textContent=f.name;dz.querySelector("img")?.remove();
+  if(/^image\//.test(f.type)){const im=document.createElement("img");im.src=URL.createObjectURL(f);dz.append(im)}after&&after()};
+ dz.onclick=()=>inp.click();dz.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();inp.click()}};
+ inp.onchange=()=>take(inp.files[0]);
+ dz.ondragover=e=>{e.preventDefault();dz.classList.add("over")};dz.ondragleave=()=>dz.classList.remove("over");
+ dz.ondrop=e=>{e.preventDefault();dz.classList.remove("over");take(e.dataTransfer.files[0])};
+}
+async function readProof(){
+ if(!aiOn||!pendingFile)return;const m=$("#aiMsg"),b=$("#readAi");b.disabled=true;m.textContent="Reading the proof…";
+ try{const b64=await new Promise((ok,no)=>{const fr=new FileReader();fr.onload=()=>ok(String(fr.result).split(",")[1]);fr.onerror=no;fr.readAsDataURL(pendingFile)});
+  const j=await api("/api/read-proof",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({image:b64,type:pendingFile.type})});
+  if(j&&typeof j==="object"){if(j.currency)$("#fCur").value=j.currency==="PKR"?"PKR":"USD";if(j.amount!=null)$("#fAmt").value=num(j.amount);if(j.date)$("#fDate").value=String(j.date).slice(0,10);
+   if(j.reference)$("#fRef").value=String(j.reference);if(j.payer)$("#fPayer").value=String(j.payer);if(j.method)$("#fMethod").value=String(j.method);
+   $("#fAmt").dispatchEvent(new Event("input"));$("#fRef").dispatchEvent(new Event("input"));m.textContent="Filled in — please check every field."}
+ }catch(e){m.textContent="Couldn't read it — fill in by hand."}
+ b.disabled=false;
+}
+async function save(d,old){
+ const sv=$("#sv");sv.disabled=true;sv.textContent="Saving…";
+ try{
+  if(pendingFile){if(pendingFile.size>4e6)throw{message:"File is over 4 MB — use a smaller screenshot."};
+   const u=await api("/api/upload",{method:"POST",headers:{"content-type":pendingFile.type||"application/octet-stream","x-filename":encodeURIComponent(pendingFile.name||"proof")},body:pendingFile});
+   d.proofUrl=u.url;d.proofType=u.type||pendingFile.type||""}
+  else if(old.proofUrl){d.proofUrl=old.proofUrl;d.proofType=old.proofType||""}
+  if(old._id){d.id=old._id;d.createdAt=old.createdAt}
+  await api("/api/entries",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(d)});
+  close();status("Saved.");await load();
+ }catch(e){sv.disabled=false;sv.textContent="Save";const t=$("#dup")||$("#aiMsg");if(t){t.style.display="block";t.textContent="Not saved: "+(e.message||"error")}}
+}
+
+/* ---------- portal CSV import ---------- */
+function parseCSV(t){const out=[];let row=[],f="",q=false;for(let i=0;i<t.length;i++){const c=t[i];
+ if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++}else q=false}else f+=c}else if(c==='"')q=true;else if(c===","){row.push(f);f=""}else if(c==="\n"||c==="\r"){if(c==="\r"&&t[i+1]==="\n")i++;row.push(f);out.push(row);row=[];f=""}else f+=c}
+ if(f||row.length){row.push(f);out.push(row)}return out.filter(r=>r.some(x=>x.trim()))}
+async function importCSV(file){
+ const t=await file.text(),a=parseCSV(t),h=a.shift().map(x=>x.trim().toLowerCase());
+ const ix=k=>h.indexOf(k),iT=ix("type"),iA=ix("amount"),iC=ix("created"),iN=ix("#");
+ if(iT<0||iA<0){status("That file doesn't look like the Expership statement (needs Type and Amount columns).");return}
+ const have=new Set(rows.filter(r=>r.kind==="deposit").map(r=>String(r.ref)));
+ const used=new Set(rows.filter(r=>r.kind==="deposit"&&r.matchNo).map(r=>String(r.matchNo)));
+ let added=0,skipped=0;
+ for(const r of a){const type=r[iT]?.trim();if(!/fund transfer|courtesy credit|deposit|payment|top.?up/i.test(type||""))continue;
+  const ref=r[iN]?.trim(),amt=num(r[iA]);if(amt<=0)continue;if(have.has(ref)){skipped++;continue}
+  const dt=new Date(r[iC]);const date=isNaN(dt)?"":dt.toISOString().slice(0,10);
+  let match=null;if(!/courtesy/i.test(type)){const cands=rows.filter(p=>p.kind==="payment"&&p.status!=="voided"&&Math.abs(num(p.toPortal)-amt)<0.5&&!used.has(String(p.no))&&Math.abs((new Date(p.date)-dt)/864e5)<=8);
+   cands.sort((x,y)=>Math.abs(new Date(x.date)-dt)-Math.abs(new Date(y.date)-dt));match=cands[0]||null}
+  if(match)used.add(String(match.no));
+  await api("/api/entries",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({kind:"deposit",date,ref,depType:/courtesy/i.test(type)?"Courtesy Credit":"Fund Transfer",usd:amt,fundedBy:match?"ZEX":"LEX",matchNo:match?match.no:null,
+   notes:match?"Auto-matched on import":(/courtesy/i.test(type)?"Courtesy credit from LEX":"No matching ZEX payment — check")})});added++}
+ await load();
+ status(`Portal CSV: ${added} new deposit(s) added, ${skipped} already in the ledger.`);
+}
+
+/* ---------- events ---------- */
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{tab=b.dataset.t;document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===b));renderList()});
+$("#q").addEventListener("input",renderList);
+$("#bPay").onclick=()=>payForm();$("#bInv").onclick=()=>invForm();$("#bDep").onclick=()=>depForm();
+$("#bCsv").onclick=()=>$("#csvFile").click();$("#csvFile").onchange=e=>{const f=e.target.files[0];if(f)importCSV(f).catch(()=>status("Import failed."));e.target.value=""};
+$("#list").addEventListener("click",async e=>{
+ if(e.target.id==="seedB"){e.target.disabled=true;e.target.textContent="Loading…";try{const j=await api("/api/seed",{method:"POST"});status(`Loaded ${j.loaded} entries.`);await load()}catch(x){status(x.message||"Couldn't load.")}return}
+ const im=e.target.closest("img.thumb");if(im){const r=rows.find(x=>x._id===im.dataset.id);$("#lbImg").src=im.src;$("#lbCap").textContent=r?`${r.kind==="payment"?"Payment #"+r.no:r.invoiceNo||""} · ${dfmt(r.date)} · ${money(r.usd)} · ${r.ref||""}`:"";$("#lb").classList.add("open");return}
+ const b=e.target.closest("button[data-a]");if(!b)return;const r=rows.find(x=>x._id===b.dataset.id);if(!r)return;
+ if(b.dataset.a==="edit")(r.kind==="payment"?payForm:r.kind==="invoice"?invForm:depForm)(r);
+ if(b.dataset.a==="void"){b.disabled=true;const d={...r,status:r.status==="voided"?"ok":"voided"};delete d._id;await api("/api/entries",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(d)}).then(load).catch(()=>status("Couldn't change it."))}
+ if(b.dataset.a==="del"){if(b.dataset.c!=="1"){b.dataset.c="1";b.textContent="Confirm delete";return}await api("/api/entries?id="+encodeURIComponent(r._id),{method:"DELETE"}).then(load).catch(()=>status("Couldn't delete it."))}
+});
+$("#lb").addEventListener("click",e=>{if(e.target.id!=="lbImg")$("#lb").classList.remove("open")});
+
+/* ---------- attach starting proofs (files named pay-01.jpg, inv-01.pdf …) ---------- */
+$("#bProofs").onclick=()=>$("#proofFiles").click();
+$("#proofFiles").onchange=async e=>{const fs=[...e.target.files];e.target.value="";let ok=0,skip=0;
+ for(const f of fs){const id=f.name.replace(/\.[^.]+$/,"").toLowerCase();const r=rows.find(x=>x.id===id);if(!r||r.proofUrl){skip++;continue}
+  status(`Uploading ${f.name} (${ok+1}/${fs.length})…`);
+  try{const u=await api("/api/upload",{method:"POST",headers:{"content-type":f.type||"application/octet-stream"},body:f});
+   const d={...r,proofUrl:u.url,proofType:u.type||f.type};delete d._id;
+   await api("/api/entries",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(d)});ok++}catch(x){skip++}}
+ await load();status(`Attached ${ok} proof(s)${skip?`, skipped ${skip}`:""}.`)};
+
+/* ---------- start ---------- */
+function showGate(msg){$("#gate").hidden=false;$("#gateMsg").textContent=msg||"";setTimeout(()=>$("#gateP").focus(),50)}
+async function start(){
+ try{await load();$("#gate").hidden=true;
+  api("/api/read-proof").then(j=>{aiOn=!!j.enabled}).catch(()=>{});
+ }catch(e){if(e.message!=="Wrong passcode")status("Can't reach the server: "+(e.message||""))}
+}
+$("#gateF").addEventListener("submit",e=>{e.preventDefault();PASS=$("#gateP").value;try{localStorage.setItem("zexlex-pass",PASS)}catch{}start()});
+if(PASS)start();else showGate();
+setInterval(()=>{if(PASS&&$("#gate").hidden&&!sheet.classList.contains("open")&&!document.hidden)load().catch(()=>{})},30000);
+}
+</script>
+</body>
+</html>
