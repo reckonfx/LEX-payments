@@ -29,6 +29,7 @@ module.exports = async (req, res) => {
     const m = text.match(/\{[\s\S]*\}/);
     return res.status(200).json(m ? JSON.parse(m[0]) : {});
   } catch (err) {
+    console.error("api/read-proof.js failed:", err);
     return res.status(500).json({ error: "Read failed: " + (err.message || err) });
   }
 };

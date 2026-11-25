@@ -44,6 +44,13 @@ const store = {
     const old = (await listAll(`${PFX}${e.id}__`)).filter(b => b.url !== saved.url).map(b => b.url);
     if (old.length) await del(old);
   },
+  // write a brand-new entry (no older versions to clean up) - used by the seed
+  async putNew(e) {
+    if (!hasBlob) { mem.set(e.id, e); return; }
+    await put(`${PFX}${e.id}__${Date.now()}.json`, JSON.stringify(e), {
+      access: "public", addRandomSuffix: true, contentType: "application/json", cacheControlMaxAge: 60,
+    });
+  },
   async del(id) {
     if (!hasBlob) { mem.delete(id); return; }
     const urls = (await listAll(`${PFX}${id}__`)).map(b => b.url);

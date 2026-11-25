@@ -43,6 +43,7 @@ module.exports = async (req, res) => {
     res.setHeader("Allow", "GET, POST, DELETE");
     return res.status(405).json({ error: "Method not allowed" });
   } catch (err) {
+    console.error("api/entries.js failed:", err);
     return res.status(500).json({ error: "Server error: " + (err.message || err) });
   }
 };

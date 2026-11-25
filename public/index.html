@@ -122,6 +122,7 @@ label>input,label>select,label>textarea{margin-top:4px}
    <button id="bInv">+ LEX invoice</button>
    <button id="bDep">+ Portal deposit</button>
    <button id="bCsv">Import portal CSV</button>
+   <button id="bSeed2" hidden>Finish loading starting data</button>
    <button id="bProofs" hidden>Attach starting proofs</button>
    <input type="file" id="proofFiles" accept="image/*,application/pdf" multiple hidden>
    <input type="file" id="csvFile" accept=".csv,text/csv" hidden>
@@ -158,6 +159,7 @@ async function api(path,opt={}){const r=await fetch(path,{...opt,headers:{...(op
  if(r.status===401){showGate("Wrong passcode.");throw{message:"Wrong passcode"}}if(!r.ok)throw{message:j.error||("Error "+r.status)};return j}
 async function load(){const j=await api("/api/entries");rows=j.entries||[];rows.forEach(r=>r._id=r.id);render();
  $("#bProofs").hidden=!rows.some(r=>/^(pay|inv)-\d+$/.test(r.id)&&!r.proofUrl);
+ $("#bSeed2").hidden=!(rows.length&&rows.filter(r=>/^(pay|inv|dep)-/.test(r.id)).length<36);
  if(!rows.length)$("#list").innerHTML=`<div class="empty">The ledger is empty.<br><br><button class="pri" id="seedB">Load starting data (reconciled to 25 Nov 2026)</button></div>`;
  if(j.persistent===false)status("Storage is not connected (Vercel Blob) — data will not be kept. See README.");}
 const status=t=>{$("#status").textContent=t||""};
@@ -369,7 +371,9 @@ $("#q").addEventListener("input",renderList);
 $("#bPay").onclick=()=>payForm();$("#bInv").onclick=()=>invForm();$("#bDep").onclick=()=>depForm();
 $("#bCsv").onclick=()=>$("#csvFile").click();$("#csvFile").onchange=e=>{const f=e.target.files[0];if(f)importCSV(f).catch(()=>status("Import failed."));e.target.value=""};
 $("#list").addEventListener("click",async e=>{
- if(e.target.id==="seedB"){e.target.disabled=true;e.target.textContent="Loading…";try{const j=await api("/api/seed",{method:"POST"});status(`Loaded ${j.loaded} entries.`);await load()}catch(x){status(x.message||"Couldn't load.")}return}
+ if(e.target.id==="seedB"){const btn=e.target;btn.disabled=true;btn.textContent="Loading 36 entries… (up to a minute)";
+  try{const j=await api("/api/seed",{method:"POST"});status(`Loaded ${j.loaded} entries${j.alreadyThere?` (${j.alreadyThere} were already there)`:""}. Now click “Attach starting proofs”.`);await load()}
+  catch(x){btn.disabled=false;btn.textContent="Try again";const m=document.createElement("div");m.className="dup";m.style.display="block";m.style.marginTop="14px";m.textContent=x.message||"Couldn't load.";btn.after(m)}return}
  const im=e.target.closest("img.thumb");if(im){const r=rows.find(x=>x._id===im.dataset.id);$("#lbImg").src=im.src;$("#lbCap").textContent=r?`${r.kind==="payment"?"Payment #"+r.no:r.invoiceNo||""} · ${dfmt(r.date)} · ${money(r.usd)} · ${r.ref||""}`:"";$("#lb").classList.add("open");return}
  const b=e.target.closest("button[data-a]");if(!b)return;const r=rows.find(x=>x._id===b.dataset.id);if(!r)return;
  if(b.dataset.a==="edit")(r.kind==="payment"?payForm:r.kind==="invoice"?invForm:depForm)(r);
@@ -387,6 +391,10 @@ $("#proofFiles").onchange=async e=>{const fs=[...e.target.files];e.target.value=
    const d={...r,proofUrl:u.url,proofType:u.type||f.type};delete d._id;
    await api("/api/entries",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(d)});ok++}catch(x){skip++}}
  await load();status(`Attached ${ok} proof(s)${skip?`, skipped ${skip}`:""}.`)};
+
+$("#bSeed2").onclick=async()=>{const b=$("#bSeed2");b.disabled=true;b.textContent="Loading…";
+ try{const j=await api("/api/seed",{method:"POST"});status(`Added ${j.loaded} missing entries.`);await load()}catch(x){status(x.message||"Couldn't load.")}
+ b.disabled=false;b.textContent="Finish loading starting data"};
 
 /* ---------- start ---------- */
 function showGate(msg){$("#gate").hidden=false;$("#gateMsg").textContent=msg||"";setTimeout(()=>$("#gateP").focus(),50)}

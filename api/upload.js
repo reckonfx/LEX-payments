@@ -24,6 +24,7 @@ module.exports = async (req, res) => {
     const blob = await put(`proofs/${crypto.randomUUID()}.${ext}`, buf, { access: "public", contentType: type });
     return res.status(200).json({ url: blob.url, type });
   } catch (err) {
+    console.error("api/upload.js failed:", err);
     return res.status(500).json({ error: "Upload failed: " + (err.message || err) });
   }
 };
